@@ -123,6 +123,24 @@ class EquipmentMaintenanceHistory extends Model
                 + ($history->material_cost ?? 0.0)
                 + ($history->other_cost ?? 0.0);
         });
+
+        static::saved(function (self $history) {
+            $equipment = $history->equipment()->first();
+
+            if (! $equipment) {
+                return;
+            }
+
+            if ($history->status === MaintenanceStatus::COMPLETED || ! empty($history->completed_at)) {
+                $equipment->last_maintenance_at = $history->completed_at ?? $history->reported_at ?? now();
+
+                if ($history->condition_after !== null) {
+                    $equipment->latest_condition = $history->condition_after;
+                }
+
+                $equipment->saveQuietly();
+            }
+        });
     }
 
     /*
@@ -174,7 +192,7 @@ class EquipmentMaintenanceHistory extends Model
             'equipment_maintenance_history_id',
             'spare_part_id'
         )->withPivot(['quantity', 'unit_price', 'total_price', 'notes'])
-         ->withTimestamps();
+            ->withTimestamps();
     }
 
     /*

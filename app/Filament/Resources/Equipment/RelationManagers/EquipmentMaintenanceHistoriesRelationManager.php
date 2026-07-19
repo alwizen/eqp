@@ -23,8 +23,16 @@ class EquipmentMaintenanceHistoriesRelationManager extends RelationManager
     {
         return $schema
             ->components([
-                TextInput::make('history_number')->required(),
-                TextInput::make('work_order_number'),
+                TextInput::make('history_number')
+                    ->label('History Number')
+                    ->default('AUTO')
+                    ->disabled()
+                    ->dehydrated(false),
+                TextInput::make('work_order_number')
+                    ->label('Work Order Number')
+                    ->default('AUTO')
+                    ->disabled()
+                    ->dehydrated(false),
                 DateTimePicker::make('reported_at'),
                 DateTimePicker::make('scheduled_at'),
                 DateTimePicker::make('started_at'),

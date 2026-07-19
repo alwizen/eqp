@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Actions\Maintenance;
 
+use App\Enums\AttachmentCategory;
 use App\Models\EquipmentMaintenanceHistory;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class UpdateMaintenanceHistoryAction
 {
@@ -33,6 +36,11 @@ class UpdateMaintenanceHistoryAction
                 }
             } else {
                 $materialCost = (float) ($history->material_cost ?? 0);
+            }
+
+            if (array_key_exists('attachments', $data)) {
+                $history->attachments()->delete();
+                $this->storeAttachments($history, $data['attachments'], $user);
             }
 
             $history->fill([
@@ -71,5 +79,56 @@ class UpdateMaintenanceHistoryAction
 
             return $history->fresh();
         });
+    }
+
+    protected function storeAttachments(EquipmentMaintenanceHistory $history, array $attachments, User $user): void
+    {
+        foreach ($attachments as $index => $attachment) {
+            if ($attachment instanceof UploadedFile) {
+                $fileName = sprintf(
+                    '%s-%s.%s',
+                    $history->history_number ?: 'maintenance',
+                    $index + 1,
+                    $attachment->getClientOriginalExtension() ?: $attachment->extension()
+                );
+
+                $path = $attachment->storeAs('maintenance-attachments', $fileName, 'public');
+
+                $history->attachments()->create([
+                    'category' => AttachmentCategory::OTHER->value,
+                    'original_name' => $attachment->getClientOriginalName(),
+                    'file_name' => $fileName,
+                    'file_path' => $path,
+                    'disk' => 'public',
+                    'mime_type' => $attachment->getMimeType(),
+                    'file_size' => $attachment->getSize(),
+                    'description' => null,
+                    'uploaded_by' => $user->id,
+                ]);
+
+                continue;
+            }
+
+            if (is_string($attachment)) {
+                $normalizedPath = ltrim($attachment, '/');
+                $fileName = basename($normalizedPath);
+
+                if (! Storage::disk('public')->exists($normalizedPath)) {
+                    continue;
+                }
+
+                $history->attachments()->create([
+                    'category' => AttachmentCategory::OTHER->value,
+                    'original_name' => $fileName,
+                    'file_name' => $fileName,
+                    'file_path' => $normalizedPath,
+                    'disk' => 'public',
+                    'mime_type' => null,
+                    'file_size' => Storage::disk('public')->size($normalizedPath),
+                    'description' => null,
+                    'uploaded_by' => $user->id,
+                ]);
+            }
+        }
     }
 }

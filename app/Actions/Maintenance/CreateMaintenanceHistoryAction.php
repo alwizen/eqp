@@ -4,18 +4,19 @@ declare(strict_types=1);
 
 namespace App\Actions\Maintenance;
 
+use App\Enums\AttachmentCategory;
 use App\Enums\MaintenanceStatus;
 use App\Models\EquipmentMaintenanceHistory;
-use App\Models\EquipmentMaintenanceSparePart;
 use App\Models\User;
 use App\Services\DocumentNumberService;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class CreateMaintenanceHistoryAction
 {
-    public function __construct(protected DocumentNumberService $documentNumberService)
-    {
-    }
+    public function __construct(protected DocumentNumberService $documentNumberService) {}
 
     public function run(array $data, User $user): EquipmentMaintenanceHistory
     {
@@ -23,11 +24,13 @@ class CreateMaintenanceHistoryAction
             $laborCost = (float) ($data['labor_cost'] ?? 0);
             $otherCost = (float) ($data['other_cost'] ?? 0);
             $materialCost = $this->calculateMaterialCost($data['spare_parts'] ?? []);
+            $historyNumber = $data['history_number'] ?? $this->generateRandomNumber('MTN');
+            $workOrderNumber = $data['work_order_number'] ?? $this->generateRandomNumber('WO');
 
             $history = EquipmentMaintenanceHistory::query()->create([
                 'equipment_id' => $data['equipment_id'],
-                'history_number' => $this->documentNumberService->generate('maintenance_history'),
-                'work_order_number' => $data['work_order_number'] ?? null,
+                'history_number' => $historyNumber,
+                'work_order_number' => $workOrderNumber,
                 'reported_at' => $data['reported_at'] ?? now(),
                 'scheduled_at' => $data['scheduled_at'] ?? null,
                 'started_at' => $data['started_at'] ?? null,
@@ -68,12 +71,75 @@ class CreateMaintenanceHistoryAction
                 ]);
             }
 
+            $this->storeAttachments($history, $data['attachments'] ?? [], $user);
+
             $history->refresh();
             $history->total_cost = $history->labor_cost + $history->material_cost + $history->other_cost;
             $history->save();
 
             return $history->fresh();
         });
+    }
+
+    protected function storeAttachments(EquipmentMaintenanceHistory $history, array $attachments, User $user): void
+    {
+        foreach ($attachments as $index => $attachment) {
+            if ($attachment instanceof UploadedFile) {
+                $fileName = sprintf(
+                    '%s-%s.%s',
+                    $history->history_number ?: 'maintenance',
+                    $index + 1,
+                    $attachment->getClientOriginalExtension() ?: $attachment->extension()
+                );
+
+                $path = $attachment->storeAs('maintenance-attachments', $fileName, 'public');
+
+                $history->attachments()->create([
+                    'category' => AttachmentCategory::OTHER->value,
+                    'original_name' => $attachment->getClientOriginalName(),
+                    'file_name' => $fileName,
+                    'file_path' => $path,
+                    'disk' => 'public',
+                    'mime_type' => $attachment->getMimeType(),
+                    'file_size' => $attachment->getSize(),
+                    'description' => null,
+                    'uploaded_by' => $user->id,
+                ]);
+
+                continue;
+            }
+
+            if (is_string($attachment)) {
+                $normalizedPath = ltrim($attachment, '/');
+                $fileName = basename($normalizedPath);
+
+                if (! Storage::disk('public')->exists($normalizedPath)) {
+                    continue;
+                }
+
+                $history->attachments()->create([
+                    'category' => AttachmentCategory::OTHER->value,
+                    'original_name' => $fileName,
+                    'file_name' => $fileName,
+                    'file_path' => $normalizedPath,
+                    'disk' => 'public',
+                    'mime_type' => null,
+                    'file_size' => Storage::disk('public')->size($normalizedPath),
+                    'description' => null,
+                    'uploaded_by' => $user->id,
+                ]);
+            }
+        }
+    }
+
+    protected function generateRandomNumber(string $prefix): string
+    {
+        return sprintf(
+            '%s/%s/%s',
+            strtoupper($prefix),
+            now()->format('YmdHis'),
+            strtoupper(Str::random(8))
+        );
     }
 
     protected function calculateMaterialCost(array $spareParts): float

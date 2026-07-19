@@ -10,7 +10,10 @@ use App\Filament\Resources\EquipmentMaintenanceHistories\Pages\CreateEquipmentMa
 use App\Filament\Resources\EquipmentMaintenanceHistories\Pages\EditEquipmentMaintenanceHistory;
 use App\Filament\Resources\EquipmentMaintenanceHistories\Pages\ManageEquipmentMaintenanceHistories;
 use App\Filament\Resources\EquipmentMaintenanceHistories\Pages\ViewEquipmentMaintenanceHistory;
+use App\Filament\Resources\EquipmentMaintenanceHistories\RelationManagers\AttachmentsRelationManager;
+use App\Filament\Resources\EquipmentMaintenanceHistories\RelationManagers\SparePartsRelationManager;
 use App\Models\EquipmentMaintenanceHistory;
+use App\Services\DocumentNumberService;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -32,84 +35,64 @@ class EquipmentMaintenanceHistoryResource extends Resource
 {
     protected static ?string $model = EquipmentMaintenanceHistory::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $navigationLabel = "History Maintenance";
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
                 Select::make('equipment_id')
-                    ->relationship('equipment', 'id')
+                    ->relationship('equipment', 'technical_no')
                     ->required(),
                 TextInput::make('history_number')
-                    ->required(),
-                TextInput::make('work_order_number'),
-                DateTimePicker::make('reported_at'),
-                DateTimePicker::make('scheduled_at'),
-                DateTimePicker::make('started_at'),
-                DateTimePicker::make('completed_at'),
+                    ->label('History Number')
+                    ->default(fn() => app(DocumentNumberService::class)->generate('maintenance_history'))
+                    ->readOnly()
+                    ->dehydrated(),
+                TextInput::make('work_order_number')
+                    ->label('Work Order Number')
+                    ->default(fn() => app(DocumentNumberService::class)->generate('work_order', null, null, 'WO'))
+                    ->readOnly()
+                    ->dehydrated(),
                 Select::make('maintenance_type')
                     ->options(MaintenanceType::class)
                     ->required(),
                 Select::make('status')
                     ->options(MaintenanceStatus::class)
-                    ->default('draft')
+                    ->default(MaintenanceStatus::REPORTED->value)
                     ->required(),
                 Select::make('executor_type')
                     ->options(ExecutorType::class)
                     ->required(),
                 Select::make('vendor_id')
-                    ->relationship('vendor', 'name'),
-                TextInput::make('internal_pic_user_id')
-                    ->numeric(),
-                TextInput::make('technician_name'),
-                TextInput::make('component'),
-                Textarea::make('problem_description')
+                    ->relationship('vendor', 'name')
+                    ->label('Assigned Vendor'),
+                TextInput::make('technician_name')
+                    ->label('Technician / PIC'),
+                TextInput::make('component')
+                    ->label('Component'),
+                TextArea::make('problem_description')
                     ->columnSpanFull(),
-                Textarea::make('root_cause')
+                TextArea::make('root_cause')
                     ->columnSpanFull(),
-                Textarea::make('action_taken')
-                    ->columnSpanFull(),
-                Textarea::make('recommendation')
+                TextArea::make('recommendation')
                     ->columnSpanFull(),
                 Select::make('condition_before')
-                    ->options(EquipmentCondition::class),
-                Select::make('condition_after')
-                    ->options(EquipmentCondition::class),
+                    ->options(EquipmentCondition::class)
+                    ->label('Condition Before'),
                 TextInput::make('downtime_minutes')
                     ->required()
                     ->numeric()
                     ->default(0),
-                TextInput::make('labor_cost')
-                    ->required()
-                    ->numeric()
-                    ->default(0)
-                    ->prefix('$'),
-                TextInput::make('material_cost')
-                    ->required()
-                    ->numeric()
-                    ->default(0)
-                    ->prefix('$'),
-                TextInput::make('other_cost')
-                    ->required()
-                    ->numeric()
-                    ->default(0)
-                    ->prefix('$'),
-                TextInput::make('total_cost')
-                    ->required()
-                    ->numeric()
-                    ->default(0)
-                    ->prefix('$'),
-                DateTimePicker::make('next_maintenance_at'),
+                DateTimePicker::make('reported_at')
+                    ->label('Reported At')
+                    ->default(now()),
+                DateTimePicker::make('scheduled_at')
+                    ->label('Scheduled At'),
                 Textarea::make('notes')
                     ->columnSpanFull(),
-                Textarea::make('cancellation_reason')
-                    ->columnSpanFull(),
-                DateTimePicker::make('cancelled_at'),
-                TextInput::make('created_by')
-                    ->numeric(),
-                TextInput::make('updated_by')
-                    ->numeric(),
             ]);
     }
 
@@ -300,6 +283,14 @@ class EquipmentMaintenanceHistoryResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            AttachmentsRelationManager::class,
+            SparePartsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
