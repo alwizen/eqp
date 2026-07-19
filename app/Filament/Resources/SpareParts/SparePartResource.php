@@ -2,7 +2,10 @@
 
 namespace App\Filament\Resources\SpareParts;
 
-use App\Filament\Resources\SpareParts\Pages\ManageSpareParts;
+use App\Filament\Resources\SpareParts\Pages\CreateSparePart;
+use App\Filament\Resources\SpareParts\Pages\EditSparePart;
+use App\Filament\Resources\SpareParts\Pages\ListSpareParts;
+use App\Filament\Resources\SpareParts\Pages\ViewSparePart;
 use App\Models\SparePart;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
@@ -33,7 +36,7 @@ class SparePartResource extends Resource
 {
     protected static ?string $model = SparePart::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedWrenchScrewdriver;
 
     public static function form(Schema $schema): Schema
     {
@@ -100,7 +103,7 @@ class SparePartResource extends Resource
                     ->placeholder('-'),
                 TextEntry::make('deleted_at')
                     ->dateTime()
-                    ->visible(fn (SparePart $record): bool => $record->trashed()),
+                    ->visible(fn(SparePart $record): bool => $record->trashed()),
             ]);
     }
 
@@ -162,7 +165,10 @@ class SparePartResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ManageSpareParts::route('/'),
+            'index' => ListSpareParts::route('/'),
+            'create' => CreateSparePart::route('/create'),
+            'view' => ViewSparePart::route('/{record}'),
+            'edit' => EditSparePart::route('/{record}/edit'),
         ];
     }
 

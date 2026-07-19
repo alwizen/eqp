@@ -2,7 +2,10 @@
 
 namespace App\Filament\Resources\Vendors;
 
-use App\Filament\Resources\Vendors\Pages\ManageVendors;
+use App\Filament\Resources\Vendors\Pages\CreateVendor;
+use App\Filament\Resources\Vendors\Pages\EditVendor;
+use App\Filament\Resources\Vendors\Pages\ListVendors;
+use App\Filament\Resources\Vendors\Pages\ViewVendor;
 use App\Models\Vendor;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
@@ -33,7 +36,7 @@ class VendorResource extends Resource
 {
     protected static ?string $model = Vendor::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice;
 
     public static function form(Schema $schema): Schema
     {
@@ -92,7 +95,7 @@ class VendorResource extends Resource
                     ->placeholder('-'),
                 TextEntry::make('deleted_at')
                     ->dateTime()
-                    ->visible(fn (Vendor $record): bool => $record->trashed()),
+                    ->visible(fn(Vendor $record): bool => $record->trashed()),
             ]);
     }
 
@@ -148,7 +151,10 @@ class VendorResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ManageVendors::route('/'),
+            'index' => ListVendors::route('/'),
+            'create' => CreateVendor::route('/create'),
+            'view' => ViewVendor::route('/{record}'),
+            'edit' => EditVendor::route('/{record}/edit'),
         ];
     }
 

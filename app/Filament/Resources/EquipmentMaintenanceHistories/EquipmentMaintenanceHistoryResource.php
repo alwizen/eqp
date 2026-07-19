@@ -6,7 +6,10 @@ use App\Enums\EquipmentCondition;
 use App\Enums\ExecutorType;
 use App\Enums\MaintenanceStatus;
 use App\Enums\MaintenanceType;
+use App\Filament\Resources\EquipmentMaintenanceHistories\Pages\CreateEquipmentMaintenanceHistory;
+use App\Filament\Resources\EquipmentMaintenanceHistories\Pages\EditEquipmentMaintenanceHistory;
 use App\Filament\Resources\EquipmentMaintenanceHistories\Pages\ManageEquipmentMaintenanceHistories;
+use App\Filament\Resources\EquipmentMaintenanceHistories\Pages\ViewEquipmentMaintenanceHistory;
 use App\Models\EquipmentMaintenanceHistory;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
@@ -303,6 +306,9 @@ class EquipmentMaintenanceHistoryResource extends Resource
     {
         return [
             'index' => ManageEquipmentMaintenanceHistories::route('/'),
+            'create' => CreateEquipmentMaintenanceHistory::route('/create'),
+            'view' => ViewEquipmentMaintenanceHistory::route('/{record}'),
+            'edit' => EditEquipmentMaintenanceHistory::route('/{record}/edit'),
         ];
     }
 }

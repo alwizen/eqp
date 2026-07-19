@@ -1,20 +1,19 @@
 <?php
 
-namespace App\Filament\Resources\Equipment\Pages;
+namespace App\Filament\Resources\SpareParts\Pages;
 
-use App\Actions\Equipment\UpdateEquipmentAction;
-use App\Filament\Resources\Equipment\EquipmentResource;
+use App\Actions\SparePart\UpdateSparePartAction;
+use App\Filament\Resources\SpareParts\SparePartResource;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 
-class EditEquipment extends EditRecord
+class EditSparePart extends EditRecord
 {
-    protected static string $resource = EquipmentResource::class;
+    protected static string $resource = SparePartResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -28,6 +27,6 @@ class EditEquipment extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        return app(UpdateEquipmentAction::class)->run($record, $data, Auth::user());
+        return app(UpdateSparePartAction::class)->run($record, $data);
     }
 }

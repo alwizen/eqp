@@ -6,6 +6,7 @@ use App\Filament\Resources\Equipment\Pages\CreateEquipment;
 use App\Filament\Resources\Equipment\Pages\EditEquipment;
 use App\Filament\Resources\Equipment\Pages\ListEquipment;
 use App\Filament\Resources\Equipment\Pages\ViewEquipment;
+use App\Filament\Resources\Equipment\RelationManagers\EquipmentMaintenanceHistoriesRelationManager;
 use App\Filament\Resources\Equipment\Schemas\EquipmentForm;
 use App\Filament\Resources\Equipment\Schemas\EquipmentInfolist;
 use App\Filament\Resources\Equipment\Tables\EquipmentTable;
@@ -22,7 +23,7 @@ class EquipmentResource extends Resource
 {
     protected static ?string $model = Equipment::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCircleStack;
 
     public static function form(Schema $schema): Schema
     {
@@ -42,7 +43,7 @@ class EquipmentResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            EquipmentMaintenanceHistoriesRelationManager::class,
         ];
     }
 

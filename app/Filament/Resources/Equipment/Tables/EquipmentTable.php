@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Equipment\Tables;
 
+use App\Filament\Resources\Equipment\RelationManagers\EquipmentMaintenanceHistoriesRelationManager;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -11,13 +12,14 @@ use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Guava\FilamentModalRelationManagers\Actions\RelationManagerAction;
 
 class EquipmentTable
 {
     public static function configure(Table $table): Table
     {
         return $table
-        ->paginated([25,50,100,'all'])
+            ->paginated([25, 50, 100, 'all'])
             ->columns([
                 TextColumn::make('tag_no')
                     ->searchable(),
@@ -75,6 +77,10 @@ class EquipmentTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                RelationManagerAction::make('maintenance-histories-relation-manager')
+                    ->label('View Maintenance Histories')
+                    ->relationManager(EquipmentMaintenanceHistoriesRelationManager::make()),
+
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
